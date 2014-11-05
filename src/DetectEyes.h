@@ -17,13 +17,14 @@
 using namespace cv;
 
 String face_cascade_name = "/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml";
-String eyes_cascade_name = "//usr/share/opencv/haarcascades/haarcascade_mcs_eyepair_small.xml";
+String eyes_cascade_name = "/usr/share/opencv/haarcascades/haarcascade_mcs_eyepair_small.xml";
 CascadeClassifier face_cascade;
 CascadeClassifier eyes_cascade;
 
 void detectAndDisplay(Mat frame);
 int houghTransform(Mat frame);
 void basicThreshold(Mat frame);
+Mat cannyThreshold(Mat frame);
 
 class Frame
 {
