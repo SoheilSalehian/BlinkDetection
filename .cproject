@@ -69,9 +69,9 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1816650240.1897690172" name="DetectEyes.h" rcbsApplicability="disable" resourcePath="src/DetectEyes.h" toolsToInvoke=""/>
 					<sourceEntries>
 						<entry excluding="HoughTransform.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="test"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

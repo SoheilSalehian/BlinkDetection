@@ -11,12 +11,16 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <iostream>
 
+
+
 using namespace cv;
+
+Mat cannyThreshold(Mat frame);
 
 int main( int argc, char** argv )
 {
   Mat image;
-  char* imageName = "/home/soheil/Pictures/circle.jpg";
+  char* imageName = "/home/soheil/Pictures/Webcam/20.jpg";
   image = imread( imageName, CV_LOAD_IMAGE_COLOR );
 
   if(!image.data)
@@ -28,7 +32,10 @@ int main( int argc, char** argv )
   Mat imageGray;
   cv::cvtColor(image, imageGray, CV_BGR2GRAY);
 
-  cv::GaussianBlur(imageGray, imageGray, Size(9,9), 2, 2);
+  cv::GaussianBlur(imageGray, imageGray, Size(3,3), 2, 2);
+
+  imageGray = cannyThreshold(imageGray);
+
 
   vector<Vec3f> circles;
   HoughCircles( imageGray, circles, CV_HOUGH_GRADIENT, 1, imageGray.rows/8, 200, 100, 100, 200 );
@@ -45,7 +52,7 @@ int main( int argc, char** argv )
 
 
   namedWindow( "Display Image", CV_WINDOW_AUTOSIZE );
-  imshow( "Display Image", image);
+  imshow( "Display Image", imageGray);
 
 //  imshow( "Display Image", imageGray );
 //  imshow("Hough", cv::HoughCircles(image, houghImage))
@@ -55,5 +62,21 @@ int main( int argc, char** argv )
   return 0;
 }
 
+Mat cannyThreshold(Mat frame)
+{
+  Mat detected_edges;
+  Mat dst;
+  /// Reduce noise with a kernel 3x3
+  blur( frame, detected_edges, Size(3,3) );
 
+  /// Canny detector
+  Canny( detected_edges, detected_edges, 90, 210, 3 );
+
+  /// Using Canny's output as a mask, we display our result
+  dst = Scalar::all(0);
+
+  frame.copyTo(dst, detected_edges);
+  imshow("canny", dst);
+  return dst;
+}
 
