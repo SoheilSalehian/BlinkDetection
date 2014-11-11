@@ -23,7 +23,7 @@ CascadeClassifier face_cascade;
 CascadeClassifier eyes_cascade;
 
 const int contourThreshold = 5;
-const int lowThreshold=60;
+const int lowThreshold=65;
 const int maxThreshold =130;
 char* window_name="Edge map";
 int previousHistBin = 0;
@@ -42,11 +42,12 @@ void detectAndDisplay(Mat frame);
 int houghTransform(Mat frame);
 Mat basicThreshold(Mat frame);
 Mat cannyThreshold(Mat frame);
-void contourAnalysis(Mat edgeDetectorOutput);
+int contourAnalysis(Mat edgeDetectorOutput);
 void momentAnalysis(Mat edgeDetectorOutput);
-void showHistogram(Mat frame);
+int showHistogram(Mat frame);
 void MatchingMethod(Mat frame);
 int pixelNumberAnalysis(Mat frame);
+bool eyeOpenOrClosed(int histogramResult, int contourResult);
 
 
 class Frame

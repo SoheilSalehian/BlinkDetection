@@ -82,12 +82,12 @@ void detectAndDisplay(cv::Mat frame)
 			frameROI = frame(rectangle);
 			imshow("ROI_COLOR", frameROI);
 			bitwise_not(frameROI, frameROI);
-			showHistogram(basicThreshold(frameROI));
+
 			imshow("ROI",frameROI);
 
 //			pixelNumberAnalysis(basicThreshold(frameROI));
 //			houghTransform(basicThreshold(frameROI));
-			contourAnalysis(cannyThreshold(frameROI));
+			eyeOpenOrClosed(showHistogram(basicThreshold(frameROI)), contourAnalysis(cannyThreshold(frameROI)));
 //			momentAnalysis(cannyThreshold(frameROI));
 			cv::rectangle(frame, rectangle, CV_RGB(0,255,0));
 		}
@@ -104,7 +104,7 @@ Mat cannyThreshold(Mat frame)
   blur( frame, detectedEdges, Size(3,3) );
 
   /// Canny detector
-  Canny( detectedEdges, detectedEdges, lowThreshold, maxThreshold, 3 , true);
+  Canny( detectedEdges, detectedEdges, lowThreshold, maxThreshold, 3 , false);
 
   /// Using Canny's output as a mask, we display our result
   dst = Scalar::all(0);
@@ -139,7 +139,7 @@ int pixelNumberAnalysis(Mat frame)
 	return whitePixel;
 }
 
-void contourAnalysis(Mat edgeDetectorOutput)
+int contourAnalysis(Mat edgeDetectorOutput)
 {
 	edgeDetectorOutput.convertTo(edgeDetectorOutput, CV_8UC1);
 	vector<vector<Point> > contours;
@@ -181,12 +181,16 @@ void contourAnalysis(Mat edgeDetectorOutput)
 	// Show in a window
 	namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
 	imshow( "Contours", drawing );
-//
-//	if(numberOfBoxes <= 1)
+
+
+	if(numberOfBoxes <= 1)
+		return 1;
 //		std::cout << numberOfBoxes << "..............Closed..." << std::endl;
-//	else
+	else
+		return 0;
 //		std::cout << numberOfBoxes << "...Open..." << std::endl;
 }
+
 
 
 int houghTransform(Mat frame)
@@ -230,15 +234,15 @@ Mat basicThreshold(Mat frame)
 	return imageGray;
 }
 
-void showHistogram(Mat frame)
+int showHistogram(Mat frame)
 {
 	  Mat src, dst;
-
+	  bool result;
 	  /// Load image
 	  src = frame;
 	  imshow("pre-histogram", src);
 	  if( !src.data )
-	    { return; }
+	    { return 0; }
 
 	  /// Separate the image in 3 places ( B, G and R )
 	  vector<Mat> bgr_planes;
@@ -280,13 +284,19 @@ void showHistogram(Mat frame)
 	  namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
 	  imshow("calcHist Demo", histImage );
 	  float binVal = b_hist.at<float>(255);
+//	  std::cout << binVal << "..vs.." << previousHistBin << std::endl;
 	  if (binVal <= previousHistBin-10)
-		  std::cout <<  binVal << "........closed" << std::endl;
+	  {
+//		  std::cout << "closed" << std::endl;
+		  result = true;
+	  }
 	  else
-		  std::cout <<  binVal << "...open" << std::endl;
-	  previousHistBin = binVal;
+		  result = false;
 
-	return;
+	previousHistBin = binVal;
+
+
+	return result;
 }
 
 
@@ -321,5 +331,19 @@ void MatchingMethod(Mat frame)
 
 	imshow("Template Matching", imageDisplay);
 	imshow("Results of Template", result);
+}
+
+bool eyeOpenOrClosed(int histogramResults, int contourResults)
+{
+	if(histogramResults and contourResults)
+	{
+		std::cout << "........Closed......" << std::endl;
+		return true;
+	}
+	else
+	{
+		std::cout << "...Open...." << std::endl;
+		return false;
+	}
 }
 
