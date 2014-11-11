@@ -181,11 +181,11 @@ void contourAnalysis(Mat edgeDetectorOutput)
 	// Show in a window
 	namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
 	imshow( "Contours", drawing );
-
-	if(numberOfBoxes == 0)
-		std::cout << numberOfBoxes << "..............Closed..." << std::endl;
-	else
-		std::cout << numberOfBoxes << "...Open..." << std::endl;
+//
+//	if(numberOfBoxes <= 1)
+//		std::cout << numberOfBoxes << "..............Closed..." << std::endl;
+//	else
+//		std::cout << numberOfBoxes << "...Open..." << std::endl;
 }
 
 
@@ -279,6 +279,12 @@ void showHistogram(Mat frame)
 	  /// Display
 	  namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
 	  imshow("calcHist Demo", histImage );
+	  float binVal = b_hist.at<float>(255);
+	  if (binVal <= previousHistBin-10)
+		  std::cout <<  binVal << "........closed" << std::endl;
+	  else
+		  std::cout <<  binVal << "...open" << std::endl;
+	  previousHistBin = binVal;
 
 	return;
 }

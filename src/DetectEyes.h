@@ -23,10 +23,10 @@ CascadeClassifier face_cascade;
 CascadeClassifier eyes_cascade;
 
 const int contourThreshold = 5;
-const int lowThreshold=80;
+const int lowThreshold=60;
 const int maxThreshold =130;
 char* window_name="Edge map";
-int previousHierSize = 0;
+int previousHistBin = 0;
 
 
 Mat openTemplate;
