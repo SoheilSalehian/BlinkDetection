@@ -42,15 +42,6 @@ int main()
 	return 0;
 }
 
-int Frame::captureFrame(){
-
-	CvCapture* capture;
-	capture = cvCaptureFromCAM(0);
-
-	if (capture)
-		return 1;
-	return 0;
-}
 
 void detectAndDisplay(cv::Mat frame)
 {
@@ -59,13 +50,15 @@ void detectAndDisplay(cv::Mat frame)
 	cv::Mat frameROI;
 	cv::Mat grayFrame;
 	std::vector<Mat> rgb;
-//	cvtColor (frame, grayFrame, CV_BGR2GRAY);
+//	cvtColor(frame,frame,cv::COLOR_BGR2YUV);
 	cv::split(frame, rgb);
+
 	// Pick the green channel
 	grayFrame = rgb[1];
 	equalizeHist (grayFrame, grayFrame);
+//	bitwise_not(grayFrame, grayFrame);
 
-
+	imshow("original Image", grayFrame);
 	// Detect faces
 	face_cascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE,Size(30,30));
 
@@ -87,20 +80,20 @@ void detectAndDisplay(cv::Mat frame)
 
 			rectangle = eyes[0] + cv::Point(faces[i].x, faces[i].y);
 			frameROI = frame(rectangle);
+			imshow("ROI_COLOR", frameROI);
+			bitwise_not(frameROI, frameROI);
+			showHistogram(basicThreshold(frameROI));
 			imshow("ROI",frameROI);
 
-
-//			houghTransform(cannyThreshold(frameROI));
-//			showHistogram(frameROI);
-
+//			pixelNumberAnalysis(basicThreshold(frameROI));
+//			houghTransform(basicThreshold(frameROI));
 			contourAnalysis(cannyThreshold(frameROI));
+//			momentAnalysis(cannyThreshold(frameROI));
 			cv::rectangle(frame, rectangle, CV_RGB(0,255,0));
 		}
 	}
-
-//	for (std::vector<Rect>::const_iterator i = eyes.begin(); i != eyes.end(); ++i)
-//		std::cout << *i << std::endl;
 }
+
 
 
 Mat cannyThreshold(Mat frame)
@@ -111,52 +104,100 @@ Mat cannyThreshold(Mat frame)
   blur( frame, detectedEdges, Size(3,3) );
 
   /// Canny detector
-  Canny( detectedEdges, detectedEdges, lowThreshold, maxThreshold, 3 );
+  Canny( detectedEdges, detectedEdges, lowThreshold, maxThreshold, 3 , true);
 
   /// Using Canny's output as a mask, we display our result
   dst = Scalar::all(0);
 
   frame.copyTo(dst, detectedEdges);
+  cv::cvtColor(dst, dst, CV_BGR2GRAY);
   imshow("canny", dst);
-  return detectedEdges;
+
+  return dst;
+}
+
+
+void momentAnalysis(Mat edgeDetectorOutput)
+{
+	Mat resultMoment;
+	const Moments& moment = moments(edgeDetectorOutput);
+	HuMoments(moment, resultMoment);
+	imshow("moment", resultMoment);
+}
+
+// comparison function object
+bool compareContourAreas ( std::vector<cv::Point> contour1, std::vector<cv::Point> contour2 ) {
+    double i = fabs( contourArea(cv::Mat(contour1)) );
+    double j = fabs( contourArea(cv::Mat(contour2)) );
+    return ( i < j );
+}
+
+int pixelNumberAnalysis(Mat frame)
+{
+	int whitePixel = cv::countNonZero(frame);
+	std::cout << whitePixel << std::endl;
+	return whitePixel;
 }
 
 void contourAnalysis(Mat edgeDetectorOutput)
 {
-//	edgeDetectorOutput.convertTo(edgeDetectorOutput, CV_8UC1);
+	edgeDetectorOutput.convertTo(edgeDetectorOutput, CV_8UC1);
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
 
-	findContours( edgeDetectorOutput, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+	findContours( edgeDetectorOutput, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
-	/// Draw contours
-	Mat drawing = Mat::zeros( edgeDetectorOutput.size(), CV_8UC3 );
+
+	Mat drawing = Mat::zeros( edgeDetectorOutput.size(), CV_8UC3);
+	int numberOfBoxes = 0;
+
 
 	for( int i = 0; i< contours.size(); i++ )
 	{
-		Scalar color = Scalar( 255, 0, 0);
-	    drawContours( drawing, contours, i, 255, 1, 8, hierarchy, 0, Point() );
+        size_t count = contours[i].size();
+        if( count < 6 or contourArea(contours[i]) <= 10)
+            continue;
+		Scalar color = Scalar( 255, 255, 255);
+        Mat pointsf;
+        Mat(contours[i]).convertTo(pointsf, CV_32F);
+        RotatedRect box = fitEllipse(pointsf);
+
+        if( MAX(box.size.width, box.size.height) > MIN(box.size.width, box.size.height)*30 )
+        	continue;
+        drawContours(drawing, contours, (int)i, Scalar::all(255), 1, 8);
+
+        ellipse(drawing, box, Scalar(0,0,255), 1, CV_AA);
+        ellipse(drawing, box.center, box.size*0.5f, box.angle, 0, 360, Scalar(0,255,255), 1, CV_AA);
+        Point2f vtx[4];
+        box.points(vtx);
+        for( int j = 0; j < 4; j++ )
+        	line(drawing, vtx[j], vtx[(j+1)%4], Scalar(0,255,0), 1, CV_AA);
+
+        numberOfBoxes++;
 
 	}
 
+//	std::cout << numberOfBoxes << std::endl;
 	// Show in a window
 	namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
 	imshow( "Contours", drawing );
-	if(hierarchy.size() <= contourThreshold)
-		std::cout << hierarchy.size() << "...Closed..." << std::endl;
-	else
-		std::cout << hierarchy.size() << "...Open..." << std::endl;
 
+	if(numberOfBoxes == 0)
+		std::cout << numberOfBoxes << "..............Closed..." << std::endl;
+	else
+		std::cout << numberOfBoxes << "...Open..." << std::endl;
 }
 
 
 int houghTransform(Mat frame)
 {
 	Mat grayFrame;
-	cvtColor(frame, grayFrame, CV_BGR2GRAY);
+	grayFrame = frame;
+//	cvtColor(frame, grayFrame, CV_BGR2GRAY);
+//	grayFrame = frame;
 
 	vector<Vec3f> circles;
-	HoughCircles(grayFrame, circles, CV_HOUGH_GRADIENT, 1, grayFrame.rows/4, 20, 10, 3, 5);
+	HoughCircles(grayFrame, circles, CV_HOUGH_GRADIENT, 1, grayFrame.rows/2, 40, 20, 10, 20);
 
 	std::cout << circles.size() << std::endl;
 
@@ -175,7 +216,7 @@ int houghTransform(Mat frame)
 	return 0;
 }
 
-void basicThreshold(Mat frame)
+Mat basicThreshold(Mat frame)
 {
     Mat imageGray;
 	cv::cvtColor(frame, imageGray, CV_BGR2GRAY);
@@ -183,66 +224,70 @@ void basicThreshold(Mat frame)
 //	cv::GaussianBlur(imageGray, imageGray, Size(9,9), 2, 2);
 	imshow("gray", imageGray);
 //	threshold(imageGray, frame, 16, 255, CV_THRESH_BINARY);
-	threshold( imageGray, imageGray, 200, 240, CV_THRESH_BINARY);
+	threshold( imageGray, imageGray, 180, 255, CV_THRESH_BINARY);
 
 	imshow("threshold", imageGray);
+	return imageGray;
 }
 
 void showHistogram(Mat frame)
 {
-	// Initialization for the calculation section
-	MatND hist;
-	int histSize = 256;
-	float range[] = {0,256};
-	const float* histRange = {range};
-	bool uniform = true;
-	bool accumulate = false;
+	  Mat src, dst;
 
-	int hist_w = 512; int hist_h = 400;
-	int bin_w = cvRound( (double) hist_w/histSize );
+	  /// Load image
+	  src = frame;
+	  imshow("pre-histogram", src);
+	  if( !src.data )
+	    { return; }
 
-	calcHist(&frame, 1, 0, Mat(), hist, 1, &histSize, &histRange, uniform, accumulate);
-	Mat histImage(hist_w, hist_h, CV_8UC3, Scalar(0,0,0));
-	normalize(hist, hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+	  /// Separate the image in 3 places ( B, G and R )
+	  vector<Mat> bgr_planes;
+	  split( src, bgr_planes );
 
-	for( int i = 1; i < histSize; i++ )
-	{
-		line( histImage, Point( bin_w*(i-1), hist_h - cvRound(hist.at<float>(i-1)) ) ,
-						 Point( bin_w*(i), hist_h - cvRound(hist.at<float>(i)) ),
-						 Scalar( 255, 0, 0), 2, 8, 0  );
-	}
+	  /// Establish the number of bins
+	  int histSize = 256;
 
-	/// Display
-	namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
-	imshow("calcHist Demo", histImage );
+	  /// Set the ranges ( for B,G,R) )
+	  float range[] = { 0, 256 } ;
+	  const float* histRange = { range };
 
-	waitKey(0);
+	  bool uniform = true; bool accumulate = true;
+
+	  Mat b_hist, g_hist, r_hist;
+
+	  /// Compute the histograms:
+	  calcHist( &bgr_planes[0], 1, 0, Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate );
+
+	  // Draw the histograms for B, G and R
+	  int hist_w = 512; int hist_h = 400;
+	  int bin_w = cvRound( (double) hist_w/histSize );
+
+	  Mat histImage( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
+
+	  /// Normalize the result to [ 0, histImage.rows ]
+	  normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+
+
+	  /// Draw for each channel
+	  for( int i = 1; i < histSize; i++ )
+	  {
+	      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(b_hist.at<float>(i-1)) ) ,
+	                       Point( bin_w*(i), hist_h - cvRound(b_hist.at<float>(i)) ),
+	                       Scalar( 255, 255, 255), 2, 8, 0  );
+	  }
+
+	  /// Display
+	  namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
+	  imshow("calcHist Demo", histImage );
 
 	return;
 }
 
-//int main()
-//{
-//
-//	frame = imread("/home/soheil/Pictures/Webcam/20.jpg");
-//	myTemplate = imread("/home/soheil/Pictures/Webcam/templateClosed.jpg");
-//
-//
-//
-//	namedWindow("image window", CV_WINDOW_AUTOSIZE);
-//	namedWindow("result window", CV_WINDOW_AUTOSIZE);
-//
-//	char* trackbarLabel = "Method: \n 0: SQDIFF \n 1: SQDIFF NORMED \n 2: TM CCORR \n 3: TM CCORR NORMED \n 4: TM COEFF \n 5: TM COEFF NORMED";
-//	createTrackbar( trackbarLabel, "image window", &matchMethod, maxTrackbar, MatchingMethod );
-//
-//	MatchingMethod(0,0);
-//
-//	return 0;
-//}
 
-void MatchingMethod(int, void*)
+
+
+void MatchingMethod(Mat frame)
 {
-
 	Mat imageDisplay;
 	frame.copyTo(imageDisplay);
 

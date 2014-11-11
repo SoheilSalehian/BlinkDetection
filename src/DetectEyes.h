@@ -16,28 +16,38 @@
 
 using namespace cv;
 
+
 String face_cascade_name = "/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml";
 String eyes_cascade_name = "/usr/share/opencv/haarcascades/haarcascade_mcs_eyepair_big.xml";
 CascadeClassifier face_cascade;
 CascadeClassifier eyes_cascade;
 
-int contourThreshold = 2;
-int lowThreshold=100/2;
-const int maxThreshold = 200/2;
+const int contourThreshold = 5;
+const int lowThreshold=80;
+const int maxThreshold =130;
 char* window_name="Edge map";
+int previousHierSize = 0;
+
+
+Mat openTemplate;
 
 // Template Matching globals FIXME: globals
 Mat frame, myTemplate, result;
-int matchMethod;
+int matchMethod = 0;
 int maxTrackbar = 5;
+
+int templateCapture = 1;
 
 void detectAndDisplay(Mat frame);
 int houghTransform(Mat frame);
-void basicThreshold(Mat frame);
+Mat basicThreshold(Mat frame);
 Mat cannyThreshold(Mat frame);
 void contourAnalysis(Mat edgeDetectorOutput);
+void momentAnalysis(Mat edgeDetectorOutput);
 void showHistogram(Mat frame);
-void MatchingMethod(int, void*);
+void MatchingMethod(Mat frame);
+int pixelNumberAnalysis(Mat frame);
+
 
 class Frame
 {
