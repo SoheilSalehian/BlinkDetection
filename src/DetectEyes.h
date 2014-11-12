@@ -23,8 +23,8 @@ CascadeClassifier face_cascade;
 CascadeClassifier eyes_cascade;
 
 const int contourThreshold = 5;
-const int lowThreshold=65;
-const int maxThreshold =130;
+const int lowThreshold=60;
+const int maxThreshold =120;
 char* window_name="Edge map";
 int previousHistBin = 0;
 

@@ -55,10 +55,10 @@ void detectAndDisplay(cv::Mat frame)
 
 	// Pick the green channel
 	grayFrame = rgb[1];
-	equalizeHist (grayFrame, grayFrame);
+//	equalizeHist (grayFrame, grayFrame);
 //	bitwise_not(grayFrame, grayFrame);
 
-	imshow("original Image", grayFrame);
+	imshow("original Image", frame);
 	// Detect faces
 	face_cascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE,Size(30,30));
 
@@ -67,11 +67,11 @@ void detectAndDisplay(cv::Mat frame)
 		// Find centroid for face ROI
 		Point center (faces[i].x + faces[i].width * 0.5, faces[i].y + faces[i].height*0.5);
 		// Draw face ROI ellipse
-		ellipse( frame, center, Size( faces[i].width*0.5, faces[i].height*0.5), 0, 0, 360, Scalar( 255,0,0 ), 1, 8, 0 );
+		ellipse( grayFrame, center, Size( faces[i].width*0.5, faces[i].height*0.5), 0, 0, 360, Scalar( 255,0,0 ), 1, 8, 0 );
 
 		Mat faceROI = grayFrame(faces[i]);
 		std::vector<Rect> eyes;
-
+		imshow("ROI",faceROI);
 		// Detect eyes per face
 		eyes_cascade.detectMultiScale( faceROI, eyes, 1.1, 2, 0 |CV_HAAR_SCALE_IMAGE, Size(30, 30) );
 
@@ -79,7 +79,7 @@ void detectAndDisplay(cv::Mat frame)
 		{
 
 			rectangle = eyes[0] + cv::Point(faces[i].x, faces[i].y);
-			frameROI = frame(rectangle);
+			frameROI = grayFrame(rectangle);
 			imshow("ROI_COLOR", frameROI);
 			bitwise_not(frameROI, frameROI);
 
@@ -87,8 +87,10 @@ void detectAndDisplay(cv::Mat frame)
 
 //			pixelNumberAnalysis(basicThreshold(frameROI));
 //			houghTransform(basicThreshold(frameROI));
-			eyeOpenOrClosed(showHistogram(basicThreshold(frameROI)), contourAnalysis(cannyThreshold(frameROI)));
+//			eyeOpenOrClosed(showHistogram(basicThreshold(frameROI)), contourAnalysis(cannyThreshold(frameROI)));
 //			momentAnalysis(cannyThreshold(frameROI));
+//			showHistogram(basicThreshold(frameROI));
+			contourAnalysis(cannyThreshold(frameROI));
 			cv::rectangle(frame, rectangle, CV_RGB(0,255,0));
 		}
 	}
@@ -100,6 +102,7 @@ Mat cannyThreshold(Mat frame)
 {
   Mat detectedEdges;
   Mat dst;
+  imshow("canny input", frame);
   /// Reduce noise with a kernel 3x3
   blur( frame, detectedEdges, Size(3,3) );
 
@@ -110,7 +113,7 @@ Mat cannyThreshold(Mat frame)
   dst = Scalar::all(0);
 
   frame.copyTo(dst, detectedEdges);
-  cv::cvtColor(dst, dst, CV_BGR2GRAY);
+//  cv::cvtColor(dst, dst, CV_BGR2GRAY);
   imshow("canny", dst);
 
   return dst;
@@ -145,7 +148,7 @@ int contourAnalysis(Mat edgeDetectorOutput)
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
 
-	findContours( edgeDetectorOutput, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+	findContours( edgeDetectorOutput, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
 
 	Mat drawing = Mat::zeros( edgeDetectorOutput.size(), CV_8UC3);
@@ -155,14 +158,18 @@ int contourAnalysis(Mat edgeDetectorOutput)
 	for( int i = 0; i< contours.size(); i++ )
 	{
         size_t count = contours[i].size();
-        if( count < 6 or contourArea(contours[i]) <= 10)
+        if (contourArea(contours[i]) < 20)
+        	continue;
+        if(count < 6)
             continue;
 		Scalar color = Scalar( 255, 255, 255);
         Mat pointsf;
         Mat(contours[i]).convertTo(pointsf, CV_32F);
         RotatedRect box = fitEllipse(pointsf);
-
-        if( MAX(box.size.width, box.size.height) > MIN(box.size.width, box.size.height)*30 )
+        std::cout << box.angle << std::endl;
+        if (box.angle > 105 && box.angle < 90)
+        	continue;
+        if( MAX(box.size.width, box.size.height) > MIN(box.size.width, box.size.height)*30)
         	continue;
         drawContours(drawing, contours, (int)i, Scalar::all(255), 1, 8);
 
@@ -223,8 +230,8 @@ int houghTransform(Mat frame)
 Mat basicThreshold(Mat frame)
 {
     Mat imageGray;
-	cv::cvtColor(frame, imageGray, CV_BGR2GRAY);
-
+//	cv::cvtColor(frame, imageGray, CV_BGR2GRAY);
+    imageGray = frame;
 //	cv::GaussianBlur(imageGray, imageGray, Size(9,9), 2, 2);
 	imshow("gray", imageGray);
 //	threshold(imageGray, frame, 16, 255, CV_THRESH_BINARY);
@@ -246,8 +253,8 @@ int showHistogram(Mat frame)
 
 	  /// Separate the image in 3 places ( B, G and R )
 	  vector<Mat> bgr_planes;
-	  split( src, bgr_planes );
-
+//	  split( src, bgr_planes );
+	  bgr_planes[0] = src;
 	  /// Establish the number of bins
 	  int histSize = 256;
 
@@ -281,11 +288,11 @@ int showHistogram(Mat frame)
 	  }
 
 	  /// Display
-	  namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
+//	  namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
 	  imshow("calcHist Demo", histImage );
 	  float binVal = b_hist.at<float>(255);
 //	  std::cout << binVal << "..vs.." << previousHistBin << std::endl;
-	  if (binVal <= previousHistBin-10)
+	  if (binVal <= previousHistBin*0.8)
 	  {
 //		  std::cout << "closed" << std::endl;
 		  result = true;

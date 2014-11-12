@@ -70,8 +70,11 @@
 						</toolChain>
 					</folderInfo>
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1816650240.1897690172" name="DetectEyes.h" rcbsApplicability="disable" resourcePath="src/DetectEyes.h" toolsToInvoke=""/>
+					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1816650240.1779999262" name="DetectEyes.cpp" rcbsApplicability="disable" resourcePath="src/DetectEyes.cpp" toolsToInvoke="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1491422408.105795593">
+						<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1491422408.105795593" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1491422408"/>
+					</fileInfo>
 					<sourceEntries>
-						<entry excluding="HoughTransform.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
+						<entry excluding="misc.cpp|HoughTransform.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
