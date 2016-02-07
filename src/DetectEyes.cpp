@@ -16,6 +16,7 @@ int main()
 
 	VideoCapture capture("driving-sample.avi");
 	if (!capture.isOpened()){
+    std::cout << "(ERR) No Video found." << std::endl;
 		return -1;
 	}
 
