@@ -12,19 +12,20 @@
 int main()
 {
 
-	CvCapture* capture;
 	Mat frame;
 
+	VideoCapture capture("driving-sample.avi");
+	if (!capture.isOpened()){
+		return -1;
+	}
+
+	
 	if( !face_cascade.load( face_cascade_name ) ){ std::cout << "--(!)Error loading\n"<<std::endl;; return -1; };
 	if( !eyes_cascade.load( eyes_cascade_name ) ){ std::cout<< "--(!)Error loading\n"<<std::endl; return -1; };
 
-	// Capture from camera
-	capture = cvCaptureFromCAM(0);
-	if (capture)
-	{
 		while (true)
 		{
-			frame = cvQueryFrame (capture);
+			frame = capture.grab();
 			if (!frame.empty())
 			{
 				detectAndDisplay(frame);
@@ -38,7 +39,6 @@ int main()
 		if ( (char) c == 'c')
 			break;
 		}
-	}
 	return 0;
 }
 
@@ -145,8 +145,8 @@ int pixelNumberAnalysis(Mat frame)
 int contourAnalysis(Mat edgeDetectorOutput)
 {
 	edgeDetectorOutput.convertTo(edgeDetectorOutput, CV_8UC1);
-	vector<vector<Point> > contours;
-	vector<Vec4i> hierarchy;
+	std::vector<std::vector<Point> > contours;
+	std::vector<Vec4i> hierarchy;
 
 	findContours( edgeDetectorOutput, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
@@ -207,7 +207,7 @@ int houghTransform(Mat frame)
 //	cvtColor(frame, grayFrame, CV_BGR2GRAY);
 //	grayFrame = frame;
 
-	vector<Vec3f> circles;
+	std::vector<Vec3f> circles;
 	HoughCircles(grayFrame, circles, CV_HOUGH_GRADIENT, 1, grayFrame.rows/2, 40, 20, 10, 20);
 
 	std::cout << circles.size() << std::endl;
@@ -252,7 +252,7 @@ int showHistogram(Mat frame)
 	    { return 0; }
 
 	  /// Separate the image in 3 places ( B, G and R )
-	  vector<Mat> bgr_planes;
+	  std::vector<Mat> bgr_planes;
 //	  split( src, bgr_planes );
 	  bgr_planes[0] = src;
 	  /// Establish the number of bins
