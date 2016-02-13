@@ -6,40 +6,39 @@
  */
 
 #include "DetectEyes.h"
+#include "stdint.h"
+#include <x86intrin.h>
+#define MEASURE_MEMORY(x) { size_t memOnStart = cv::memorySnapshot().allocatedMemory; x; \
+                            size_t memOnEnd = cv::memorySnapshot().allocatedMemory;      \
+                            std::cout << #x << "\t" << memOnStart << "/" << memOnEnd << std::endl; }
 
 
-
-int main()
+int main(int argc, char* argv[])
 {
 
 	Mat frame;
 
-	VideoCapture capture("driving-sample.avi");
-	if (!capture.isOpened()){
-    std::cout << "(ERR) No Video found." << std::endl;
-		return -1;
-	}
 
-	
 	if( !face_cascade.load( face_cascade_name ) ){ std::cout << "--(!)Error loading\n"<<std::endl;; return -1; };
 	if( !eyes_cascade.load( eyes_cascade_name ) ){ std::cout<< "--(!)Error loading\n"<<std::endl; return -1; };
 
-		while (true)
-		{
-			frame = capture.grab();
-			if (!frame.empty())
-			{
-				detectAndDisplay(frame);
-			}
-			else
-			{
-				std::cout << "(ERR) No captured frame...quitting" << std::endl;
-				break;
-			}
-		int c = waitKey(10);
-		if ( (char) c == 'c')
-			break;
-		}
+
+  if (argc > 1) {
+    frame = cv::imread(argv[1]);
+  }
+
+  if (frame.empty()) { std::cout << "(ERR) No captured frame...quitting" << std::endl; return -1; };
+
+  auto before = rdtsc();
+  MEASURE_MEMORY(detectAndDisplay(frame));
+  auto after = rdtsc();
+  auto cycles = after - before;
+  std::cout << "Resolution: " << frame.size() << std::endl;
+  // double fps = capture.get(CV_CAP_PROP_FPS);
+  // std::cout << "Frames per second: " << fps << std::endl;
+  std::cout << "CPU Cycles: " << cycles << std::endl;
+  std::cout << "Cycles/pixel: " << cycles/frame.total() << std::endl;
+
 	return 0;
 }
 
@@ -59,10 +58,9 @@ void detectAndDisplay(cv::Mat frame)
 //	equalizeHist (grayFrame, grayFrame);
 //	bitwise_not(grayFrame, grayFrame);
 
-	imshow("original Image", frame);
+	//imshow("original Image", frame);
 	// Detect faces
-	face_cascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE,Size(30,30));
-
+face_cascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE,Size(30,30));
 	for (size_t i = 0; i < faces.size(); i++ )
 	{
 		// Find centroid for face ROI
@@ -72,7 +70,7 @@ void detectAndDisplay(cv::Mat frame)
 
 		Mat faceROI = grayFrame(faces[i]);
 		std::vector<Rect> eyes;
-		imshow("ROI",faceROI);
+		//imshow("ROI",faceROI);
 		// Detect eyes per face
 		eyes_cascade.detectMultiScale( faceROI, eyes, 1.1, 2, 0 |CV_HAAR_SCALE_IMAGE, Size(30, 30) );
 
@@ -81,17 +79,18 @@ void detectAndDisplay(cv::Mat frame)
 
 			rectangle = eyes[0] + cv::Point(faces[i].x, faces[i].y);
 			frameROI = grayFrame(rectangle);
-			imshow("ROI_COLOR", frameROI);
-			bitwise_not(frameROI, frameROI);
+			//imshow("ROI_COLOR", frameROI);
+			// bitwise_not(frameROI, frameROI);
 
-			imshow("ROI",frameROI);
-
+			// imshow("ROI",frameROI);
+      basicThreshold(frameROI);
 //			pixelNumberAnalysis(basicThreshold(frameROI));
 //			houghTransform(basicThreshold(frameROI));
-//			eyeOpenOrClosed(showHistogram(basicThreshold(frameROI)), contourAnalysis(cannyThreshold(frameROI)));
+			// eyeOpenOrClosed(showHistogram(basicThreshold(frameROI)), contourAnalysis(cannyThreshold(frameROI)));
+			eyeOpenOrClosed(1, contourAnalysis(cannyThreshold(frameROI)));
 //			momentAnalysis(cannyThreshold(frameROI));
-//			showHistogram(basicThreshold(frameROI));
-			contourAnalysis(cannyThreshold(frameROI));
+			// showHistogram(basicThreshold(frameROI));
+			// contourAnalysis(cannyThreshold(frameROI));
 			cv::rectangle(frame, rectangle, CV_RGB(0,255,0));
 		}
 	}
@@ -103,7 +102,7 @@ Mat cannyThreshold(Mat frame)
 {
   Mat detectedEdges;
   Mat dst;
-  imshow("canny input", frame);
+  //imshow("canny input", frame);
   /// Reduce noise with a kernel 3x3
   blur( frame, detectedEdges, Size(3,3) );
 
@@ -115,7 +114,7 @@ Mat cannyThreshold(Mat frame)
 
   frame.copyTo(dst, detectedEdges);
 //  cv::cvtColor(dst, dst, CV_BGR2GRAY);
-  imshow("canny", dst);
+  //imshow("canny", dst);
 
   return dst;
 }
@@ -126,7 +125,7 @@ void momentAnalysis(Mat edgeDetectorOutput)
 	Mat resultMoment;
 	const Moments& moment = moments(edgeDetectorOutput);
 	HuMoments(moment, resultMoment);
-	imshow("moment", resultMoment);
+	//imshow("moment", resultMoment);
 }
 
 // comparison function object
@@ -139,7 +138,7 @@ bool compareContourAreas ( std::vector<cv::Point> contour1, std::vector<cv::Poin
 int pixelNumberAnalysis(Mat frame)
 {
 	int whitePixel = cv::countNonZero(frame);
-	std::cout << whitePixel << std::endl;
+	// std::cout << whitePixel << std::endl;
 	return whitePixel;
 }
 
@@ -167,7 +166,7 @@ int contourAnalysis(Mat edgeDetectorOutput)
         Mat pointsf;
         Mat(contours[i]).convertTo(pointsf, CV_32F);
         RotatedRect box = fitEllipse(pointsf);
-        std::cout << box.angle << std::endl;
+        // std::cout << box.angle << std::endl;
         if (box.angle > 105 && box.angle < 90)
         	continue;
         if( MAX(box.size.width, box.size.height) > MIN(box.size.width, box.size.height)*30)
@@ -188,7 +187,7 @@ int contourAnalysis(Mat edgeDetectorOutput)
 //	std::cout << numberOfBoxes << std::endl;
 	// Show in a window
 	namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
-	imshow( "Contours", drawing );
+	//imshow( "Contours", drawing );
 
 
 	if(numberOfBoxes <= 1)
@@ -223,7 +222,7 @@ int houghTransform(Mat frame)
 
 
 	namedWindow( "Hough Transform", CV_WINDOW_AUTOSIZE );
-	imshow( "Hough Transform", frame);
+	//imshow( "Hough Transform", frame);
 
 	return 0;
 }
@@ -234,11 +233,11 @@ Mat basicThreshold(Mat frame)
 //	cv::cvtColor(frame, imageGray, CV_BGR2GRAY);
     imageGray = frame;
 //	cv::GaussianBlur(imageGray, imageGray, Size(9,9), 2, 2);
-	imshow("gray", imageGray);
+	//imshow("gray", imageGray);
 //	threshold(imageGray, frame, 16, 255, CV_THRESH_BINARY);
 	threshold( imageGray, imageGray, 180, 255, CV_THRESH_BINARY);
 
-	imshow("threshold", imageGray);
+	//imshow("threshold", imageGray);
 	return imageGray;
 }
 
@@ -248,7 +247,7 @@ int showHistogram(Mat frame)
 	  bool result;
 	  /// Load image
 	  src = frame;
-	  imshow("pre-histogram", src);
+	  //imshow("pre-histogram", src);
 	  if( !src.data )
 	    { return 0; }
 
@@ -290,7 +289,7 @@ int showHistogram(Mat frame)
 
 	  /// Display
 //	  namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
-	  imshow("calcHist Demo", histImage );
+	  //imshow("calcHist Demo", histImage );
 	  float binVal = b_hist.at<float>(255);
 //	  std::cout << binVal << "..vs.." << previousHistBin << std::endl;
 	  if (binVal <= previousHistBin*0.8)
@@ -337,8 +336,8 @@ void MatchingMethod(Mat frame)
 	rectangle( imageDisplay, matchLoc, Point( matchLoc.x + myTemplate.cols , matchLoc.y + myTemplate.rows ), Scalar::all(0), 2, 8, 0 );
 	rectangle( result, matchLoc, Point( matchLoc.x + myTemplate.cols , matchLoc.y + myTemplate.rows ), Scalar::all(0), 2, 8, 0 );
 
-	imshow("Template Matching", imageDisplay);
-	imshow("Results of Template", result);
+	//imshow("Template Matching", imageDisplay);
+	//imshow("Results of Template", result);
 }
 
 bool eyeOpenOrClosed(int histogramResults, int contourResults)
@@ -355,3 +354,8 @@ bool eyeOpenOrClosed(int histogramResults, int contourResults)
 	}
 }
 
+uint64_t rdtsc(){
+    unsigned int lo,hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64_t)hi << 32) | lo;
+}

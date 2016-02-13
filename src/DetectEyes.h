@@ -17,8 +17,8 @@
 using namespace cv;
 
 
-String face_cascade_name = "/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml";
-String eyes_cascade_name = "/usr/share/opencv/haarcascades/haarcascade_mcs_eyepair_big.xml";
+String face_cascade_name = "../haarcascade_frontalface_alt.xml";
+String eyes_cascade_name = "../haarcascade_mcs_eyepair_big.xml";
 CascadeClassifier face_cascade;
 CascadeClassifier eyes_cascade;
 
@@ -58,6 +58,6 @@ private:
 	int frameID;
 };
 
-
+uint64_t rdtsc();
 
 #endif /* DETECTEYES_H_ */
