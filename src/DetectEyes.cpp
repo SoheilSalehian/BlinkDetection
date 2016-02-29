@@ -19,8 +19,8 @@ int main(int argc, char* argv[])
 	Mat frame;
 
 
-	if( !face_cascade.load( face_cascade_name ) ){ std::cout << "--(!)Error loading\n"<<std::endl;; return -1; };
-	if( !eyes_cascade.load( eyes_cascade_name ) ){ std::cout<< "--(!)Error loading\n"<<std::endl; return -1; };
+	if( !face_cascade.load( face_cascade_name ) ){ std::cout << "--(!)Error loading face XML file\n"<<std::endl;; return -1; };
+	if( !eyes_cascade.load( eyes_cascade_name ) ){ std::cout<< "--(!)Error loading eye XML file\n"<<std::endl; return -1; };
 
 
   if (argc > 1) {
